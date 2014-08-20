@@ -1,0 +1,228 @@
+<?
+  $arquivo="prot_funcionamento.php";
+  require_once 'lib/loader.php';
+
+  $conn= new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+  if ($conn->get_status()==false) {
+    die($conn->get_msg());
+  }
+
+  $sql= "SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA ='".$arquivo."'";
+
+  $res= $conn->query($sql);
+  $rows_rotina=$conn->num_rows();
+  if ($rows_rotina>0) {
+    $rotina = $conn->fetch_row();
+  }
+  $global_obj_sessao->load($rotina["ID_ROTINA"]);
+  $usuario=$global_obj_sessao->is_logged_in();
+
+  if (isset($_GET["hdn_id_cep"])) {
+    if (isset($_GET["hdn_limit"])) {
+      $limit=$_GET["hdn_limit"];
+    } else {
+      $limit=0;
+    }
+    $restringir=10;
+    $ID_CEP=formataCampo($_GET["hdn_id_cep"],'N');
+    if ($ID_CEP!="") {
+      if ((!isset($_GET["hdn_fim"]))||(@$_GET["hdn_fim"]=="")) {
+        $query="SELECT ".TBL_CEP.".ID_CEP, ".TBL_CEP.".ID_LOGRADOURO, ".TBL_LOGRADOURO.".NM_LOGRADOURO, ".TBL_LOGRADOURO.".ID_TP_LOGRADOURO, ".TBL_LOGRADOURO.".ID_BAIRROS, ".TBL_BAIRROS.".NM_BAIRROS, ".TBL_CEP.".DE_COMPLEMENTO, IF(".TBL_CEP.".CH_AGUARDO='N','NÃO','SIM') AS CH_AGUARDO FROM ".TBL_CEP." LEFT JOIN ".TBL_LOGRADOURO." ON (".TBL_CEP.".ID_LOGRADOURO=".TBL_LOGRADOURO.".ID_LOGRADOURO AND ".TBL_CEP.".ID_CIDADE=".TBL_LOGRADOURO.".ID_CIDADE) LEFT JOIN ".TBL_BAIRROS." ON (".TBL_LOGRADOURO.".ID_BAIRROS=".TBL_BAIRROS.".ID_BAIRROS AND ".TBL_LOGRADOURO.".ID_CIDADE_BAIRROS=".TBL_BAIRROS.".ID_CIDADE) WHERE ".TBL_CEP.".ID_CEP =$ID_CEP AND ".TBL_CEP.".ID_CIDADE=".$_GET["hdn_id_cidade"];
+        $conn->query($query);
+        if ($conn->get_status()==false) {
+          die($conn->get_msg());
+        }
+        $rows=$conn->num_rows();
+        if ($rows==1) {
+          $tupula = $conn->fetch_row()
+?>
+<script language="javascript" type="text/javascript">//<!--
+  var frm=window.opener.document.frm_cad_logradouro;
+  frm.cmb_id_tp_logradouro.value="<?=$tupula["ID_TP_LOGRADOURO"]?>";
+  frm.hdn_id_logradouro.value="<?=$tupula["ID_LOGRADOURO"]?>";
+  frm.txt_nm_logradouro.value="<?=$tupula["NM_LOGRADOURO"]?>";
+  frm.txt_id_cep.value="<?=$tupula["ID_CEP"]?>";
+  frm.txt_de_complemento.value="<?=$tupula["DE_COMPLEMENTO"]?>";
+  frm.hdn_id_bairro.value="<?=$tupula["ID_BAIRROS"]?>";
+  frm.txt_nm_bairro.value="<?=$tupula["NM_BAIRROS"]?>";
+  CEP(frm.txt_id_cep);
+window.close();
+//--></script>
+<?
+        } elseif ($rows>1) {
+          $fim=(ceil($rows/$restringir)-1);
+        } else {
+?>
+<script language="javascript" type="text/javascript">//<!--
+ var frm=window.opener.document.frm_cad_logradouro;
+CEP(frm.txt_id_cep);
+window.close();
+//--></script>
+<?
+        }
+      } else {
+        $fim=$_GET["hdn_fim"];
+      }
+      echo "<!--aqui :".@$fim."|".@$rows."/".@$restringir."|==>".@$query."-->\n";
+      if (@$fim<1) {
+        $fim="";
+      }
+      if ($limit=="") {
+        $limit=0;
+      }
+      $query="SELECT ".TBL_CEP.".ID_CEP, ".TBL_CEP.".ID_LOGRADOURO, ".TBL_LOGRADOURO.".NM_LOGRADOURO, ".TBL_LOGRADOURO.".ID_TP_LOGRADOURO, ".TBL_LOGRADOURO.".ID_BAIRROS, ".TBL_BAIRROS.".NM_BAIRROS, ".TBL_CEP.".DE_COMPLEMENTO, IF(".TBL_CEP.".CH_AGUARDO='N','NÃO','SIM') AS CH_AGUARDO FROM ".TBL_CEP." LEFT JOIN ".TBL_LOGRADOURO." ON (".TBL_CEP.".ID_LOGRADOURO=".TBL_LOGRADOURO.".ID_LOGRADOURO AND ".TBL_CEP.".ID_CIDADE=".TBL_LOGRADOURO.".ID_CIDADE) LEFT JOIN ".TBL_BAIRROS." ON (".TBL_LOGRADOURO.".ID_BAIRROS=".TBL_BAIRROS.".ID_BAIRROS AND ".TBL_LOGRADOURO.".ID_CIDADE_BAIRROS=".TBL_BAIRROS.".ID_CIDADE) WHERE ".TBL_CEP.".ID_CEP =$ID_CEP AND ".TBL_CEP.".ID_CIDADE=".$_GET["hdn_id_cidade"]." ORDER BY ".TBL_LOGRADOURO.".NM_LOGRADOURO LIMIT ".$limit." , 10";
+    } else {
+      $fim="";
+      $limit=0;
+      $query="SELECT ".TBL_CEP.".ID_CEP, ".TBL_CEP.".ID_LOGRADOURO, ".TBL_LOGRADOURO.".NM_LOGRADOURO, ".TBL_LOGRADOURO.".ID_TP_LOGRADOURO, ".TBL_LOGRADOURO.".ID_BAIRROS, ".TBL_BAIRROS.".NM_BAIRROS, ".TBL_CEP.".DE_COMPLEMENTO, IF(".TBL_CEP.".CH_AGUARDO='N','NÃO','SIM') AS CH_AGUARDO FROM ".TBL_CEP." LEFT JOIN ".TBL_LOGRADOURO." ON (".TBL_CEP.".ID_LOGRADOURO=".TBL_LOGRADOURO.".ID_LOGRADOURO AND ".TBL_CEP.".ID_CIDADE=".TBL_LOGRADOURO.".ID_CIDADE) LEFT JOIN ".TBL_BAIRROS." ON (".TBL_LOGRADOURO.".ID_BAIRROS=".TBL_BAIRROS.".ID_BAIRROS AND ".TBL_LOGRADOURO.".ID_CIDADE_BAIRROS=".TBL_BAIRROS.".ID_CIDADE) WHERE ".TBL_CEP.".ID_CEP =$ID_CEP AND ".TBL_CEP.".ID_CIDADE=".$_GET["hdn_id_cidade"]." ORDER BY ".TBL_LOGRADOURO.".NM_LOGRADOURO LIMIT ".$limit." , 10";
+    }
+
+    $conn->query($query);
+     if ($conn->get_status()==false) {
+      die($conn->get_msg());
+    }
+    $rows=$conn->num_rows();
+?>
+<body>
+<script language="javascript" type="text/javascript">//<!--
+function sbmit () {
+  if (document.form1.hdn_nome.value!=document.form1.hdn_id_cep.value) {
+    document.form1.hdn_limit.value=0;
+    document.form1.hdn_fim.value="";
+  }
+  window.document.form1.submit();
+}
+function consulta_ret(id_prefixo,id_logradouro,nm_logradouro,id_bairros,nm_bairros,id_cep,de_complemento) {
+  var frm=window.opener.document.frm_cad_logradouro;
+  frm.cmb_id_tp_logradouro.value=id_prefixo;
+  frm.hdn_id_logradouro.value=id_logradouro;
+  frm.txt_nm_logradouro.value=nm_logradouro;
+  frm.hdn_id_bairro.value=id_bairros;
+  frm.txt_nm_bairro.value=nm_bairros;
+  frm.txt_id_cep.value=id_cep;
+  CEP(frm.txt_id_cep);
+  frm.txt_de_complemento.value=de_complemento;
+  window.close();
+}
+
+</script>
+<form method="GET" target="_self" name="form1" onsubmit="sbmit()">
+<fieldset>
+<legend>Consulta Logradouro</legend>
+<table width="90%" cellspacing="0" border="0" cellpadding="5" align="center">
+    <head>
+      <link rel="stylesheet" type="text/css" href="./../../css/menu.css">
+      <link type="text/css" rel="stylesheet" href="./../../css/calendario.css" />
+      <link rel="stylesheet" type="text/css" href="./../../css/ebombeiro.css">
+    </head>
+  <tr valign="center">
+    <td colspan="3">
+      <input type="hidden" value="<?=$ID_CEP?>" name="hdn_id_cep">
+        <input type="hidden" name="hdn_limit" value="">
+        <input type="hidden" name="hdn_fim" value="<?=$fim?>">
+        <input type="hidden" name="hdn_nome" value="<?=$ID_CEP?>">
+    </td>
+  </tr>
+  <tr valign="center">
+    <td colspan="3">
+<?
+    if ($rows>0) {
+?>
+<table width="100%" cellspacing="2" border="0" cellpadding="2" align="center">
+  <tr>
+    <th>CEP</th>
+    <th>LOGRADOURO</th>
+    <th>BAIRRO</th>
+    <th>AGUARDANDO VALIDAÇÃO</th>
+  </tr>
+<?
+        while ($tupula = $conn->fetch_row()) {
+	    if ($cor == '#f5f5f5') $cor = '#ffffff'; else $cor = '#f5f5f5';
+?>
+  <tr style="cursor:pointer" bgcolor="<?=$cor;?>">
+    <td align="center"><a href="javascript:consulta_ret('<?=$tupula["ID_TP_LOGRADOURO"]?>','<?=$tupula["ID_LOGRADOURO"]?>','<?=$tupula["NM_LOGRADOURO"]?>','<?=$tupula["ID_BAIRROS"]?>','<?=$tupula["NM_BAIRROS"]?>','<?=$tupula["ID_CEP"]?>','<?=$tupula["DE_COMPLEMENTO"]?>')"><?=formatCEP($tupula["ID_CEP"])?></a></td>
+    <td align="center"><a href="javascript:consulta_ret('<?=$tupula["ID_TP_LOGRADOURO"]?>','<?=$tupula["ID_LOGRADOURO"]?>','<?=$tupula["NM_LOGRADOURO"]?>','<?=$tupula["ID_BAIRROS"]?>','<?=$tupula["NM_BAIRROS"]?>','<?=$tupula["ID_CEP"]?>','<?=$tupula["DE_COMPLEMENTO"]?>')"><?=$tupula["NM_LOGRADOURO"];?></a></td>
+    <td align="center"><a href="javascript:consulta_ret('<?=$tupula["ID_TP_LOGRADOURO"]?>','<?=$tupula["ID_LOGRADOURO"]?>','<?=$tupula["NM_LOGRADOURO"]?>','<?=$tupula["ID_BAIRROS"]?>','<?=$tupula["NM_BAIRROS"]?>','<?=$tupula["ID_CEP"]?>','<?=$tupula["DE_COMPLEMENTO"]?>')"><?=$tupula["NM_BAIRROS"]?></a></td>
+    <td align="center"><a href="javascript:consulta_ret('<?=$tupula["ID_TP_LOGRADOURO"]?>','<?=$tupula["ID_LOGRADOURO"]?>','<?=$tupula["NM_LOGRADOURO"]?>','<?=$tupula["ID_BAIRROS"]?>','<?=$tupula["NM_BAIRROS"]?>','<?=$tupula["ID_CEP"]?>','<?=$tupula["DE_COMPLEMENTO"]?>')"><?=$tupula["CH_AGUARDO"];?></a></td>
+  </tr>
+<?
+        }
+        $limit_ant=$limit-$restringir;
+        $limit+=$restringir;
+?>
+<script language="javascript" type="text/javascript">
+function envia(tipo) {
+  switch (tipo) {
+    case 1:
+      document.form1.hdn_limit.value='0';
+      break;
+    case 2:
+      document.form1.hdn_limit.value='<?=$limit_ant?>';
+      break;
+    case 3:
+      document.form1.hdn_limit.value='<?=$limit?>';
+      break;
+    case 4:
+      document.form1.hdn_limit.value='<?=$fim*10?>';
+      break;
+  }
+  document.form1.submit();
+}
+</script>
+
+<table width="90%" cellspacing="5" border="0" cellpadding="0" align="center">
+  <tr>
+<?
+      if ($limit_ant>=0) {
+?>
+    <td><input type="button" value="Primeiro" name="btn_primeiro" title="Primeiros 10 Registros" onclick="envia(1)" class="botao" style="background-image : url('../../imagens/botao.gif');"></td>
+    <td><input type="button" value="Anterior" name="btn_anterior" title="10 Registros Anteriores" onclick="envia(2)" class="botao" style="background-image : url('../../imagens/botao.gif');"></td>
+<?
+      } else {
+?>
+    <td><input type="button" value="Primeiro" name="btn_primeiro" title="Primeiros 10 Registros" onclick="envia(1)" class="botao" style="background-image : url('../../imagens/botao.gif');visibility:hidden;" disabled="true"></td>
+    <td><input type="button" value="Anterior" name="btn_anterior" title="10 Registros Anteriores" onclick="envia(2)" class="botao" style="background-image : url('../../imagens/botao.gif');visibility:hidden;" disabled="true"></td>
+<?
+      }
+      if (($fim*10)>=$limit) {
+?>
+    <td>
+    <input type="button" value="Próximo" name="btn_proximo" title="Próximos 10 Registros" onclick="envia(3)" class="botao" style="background-image : url('../../imagens/botao.gif');">
+    </td>
+    <td><input type="button" value="Último" name="btn_ultimo" title="Últimos 10 Registros" onclick="envia(4)" class="botao" style="background-image : url('../../imagens/botao.gif');"></td>
+<?
+      } else {
+?>
+    <td>
+    <input type="button" value="Próximo" name="btn_proximo" title="Próximos 10 Registros" onclick="envia(3)" class="botao" style="background-image : url('../../imagens/botao.gif');visibility:hidden;" disabled="true">
+    </td>
+    <td><input type="button" value="Último" name="btn_ultimo" title="Últimos 10 Registros" onclick="envia(4)" class="botao" style="background-image : url('../../imagens/botao.gif');visibility:hidden;" disabled="true"></td>
+
+<?
+      }
+?>
+  </tr>
+</table>
+</table>
+</td>
+  </tr>
+</table>
+<?
+    } else {
+?>
+<script language="javascript" type="text/javascript">
+
+  alert("Registros não encontrados!!!");
+  <?="//".$NM_FONETICA?>
+
+</script>
+<?
+    }
+?>
+</fieldset>
+</form>
+<?
+  } 
+?>
+</body>
+</html>

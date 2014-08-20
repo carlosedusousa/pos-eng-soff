@@ -1,0 +1,190 @@
+<?  //echo "<pre>"; print_r($_POST); echo "</pre>";
+
+//     include ('../../templates/head.htm');
+    
+    $arquivo = "edificacao.php";
+    require_once 'lib/loader.php';
+    
+    $conn = new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+    if ($conn->get_status() == false) die ($conn->get_msg());
+    
+    $sql = "SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA ='".$arquivo."'";
+    $res = $conn->query($sql);
+    $rows_rotina = $conn->num_rows();
+    if ($rows_rotina>0) $rotina = $conn->fetch_row();
+    
+    $global_obj_sessao->load($rotina["ID_ROTINA"]);
+    $usuario = $global_obj_sessao->is_logged_in();
+    
+    if (isset($_GET["hdn_limit"])) $limit = $_GET["hdn_limit"]; else $limit = 0;
+    
+    $restringir = 10;
+    
+    $ID_CIDADE = @$_GET["cmb_id_cidade"];
+    if ($ID_CIDADE == 8105) $TABELA = "IMPORTACAO.EDIFICACOES_FLO"; else $TABELA="";
+    
+    $CAMPO = @$_GET["txt_pesquisa"];
+    $campo_padrao = @$_GET["cmb_campo_padrao"];
+
+   // include ('../../templates/cab.htm');
+
+?>
+<link rel="stylesheet" type="text/css" > <!--href="../../css/sigat_mvs.css"-->
+<script language="javascript" type="text/javascript">
+    function sbmit () {
+        if ((document.form1.hdn_nome.value != document.form1.txt_pesquisa.value) || (document.form1.hdn_campo_padrao.value != document.form1.cmb_campo_padrao.value)) {
+            document.form1.hdn_limit.value = 0;
+            document.form1.hdn_fim.value = "";
+        }
+        window.document.form1.submit();
+    }
+    function consulta_ret(iagID) {
+        window.open("http://10.1.1.7/csp/scflo/gBDSTU2.CSP?ROTINA=BOMLISRE&ZEDIF="+iagID,"cons_hist","top=0,left=0,screenY=0,screenX=0,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=yes,resizable=no,width=780,height=500,innerwidth=780,innerheight=500")
+    }
+ </script>
+<body onload="ajustaspan()">
+<form method="GET" target="_self" name="form1" onsubmit="sbmit()">
+<fieldset>
+<legend>Consulta Hist&oacute;rico</legend>
+<table width="100%" align="center" border="0">
+  <tr valign="center">
+    <td>
+      <select name="cmb_id_cidade" value="" class="campo_obr">
+        <option value=""> - - - - - - - - - - - - Cidades - - - - - - - - - - - - </option>
+        <?
+          $sql= "SELECT ".TBL_CIDADE.".ID_CIDADE ID_CIDADE,NM_CIDADE FROM ".TBL_CIDADE." LEFT JOIN ".TBL_CIDADES_USR." USING(ID_CIDADE) WHERE ".TBL_CIDADES_USR.".ID_USUARIO='$usuario' AND ".TBL_CIDADE.".ID_UF='SC' ORDER BY NM_CIDADE";
+          $res= $conn->query($sql);
+          if ($conn->get_status()==false) die($conn->get_msg());
+          while ($tupula = $conn->fetch_row()) {
+            ?><option value="<?=$tupula['ID_CIDADE']?>"><?=$tupula['NM_CIDADE']?></option><?
+          }
+        ?>
+      </select>
+    </td>
+    <td>
+      <select name="cmb_campo_padrao" value="" class="campo_obr" >
+        <option value=""> - - Filtro - - </option>
+        <option value="iagID">RE</option>
+        <option value="NOMEEDIFICACAO">Nome</option>
+      </select>
+      <script>
+        document.form1.cmb_campo_padrao.value="<?=$campo_padrao?>";
+        document.form1.cmb_id_cidade.value="<?=$ID_CIDADE?>";
+      </script>
+    </td>
+    <td><input type="text" size="15" class="campo_obr" value="<?=$CAMPO?>" name="txt_pesquisa">
+    <?
+    if (($CAMPO!="")&&($ID_CIDADE!="")) {
+      if ((!isset($_GET["hdn_fim"]))||(@$_GET["hdn_fim"]=="")) {
+        $query="SELECT $TABELA.iagID, $TABELA.NOMEEDIFICACAO FROM $TABELA WHERE $TABELA.$campo_padrao LIKE '%".$CAMPO."%' 
+                  GROUP BY $TABELA.$campo_padrao";
+        $conn->query($query);
+        if ($conn->get_status()==false) die($conn->get_msg());
+        $rows=$conn->num_rows();
+        $fim=(ceil($rows/$restringir)-1);
+      } else {
+        $fim=$_GET["hdn_fim"];
+      }
+      if (@$fim<1) $fim="";
+      if ($limit=="") $limit=0;
+      $query="SELECT " .
+            "$TABELA.iagID, " .
+            "$TABELA.NOMEEDIFICACAO " .
+        "FROM $TABELA " .
+        "WHERE $TABELA.$campo_padrao LIKE '%".$CAMPO."%' " .
+        "GROUP BY $TABELA.$campo_padrao " .
+        "ORDER BY $TABELA.NOMEEDIFICACAO, $TABELA.iagID " .
+        "LIMIT ".$limit." , 10";
+     $conn->query($query);
+     if ($conn->get_status() == false) die($conn->get_msg());
+        $rows = $conn->num_rows();
+     } else {
+        $rows = 0;
+     }
+    ?>
+    <input type="hidden" name="hdn_limit" value="">
+    <input type="hidden" name="hdn_fim" value="<?=$fim?>">
+    <input type="hidden" name="hdn_nome" value="<?=$CAMPO?>">
+    <input type="hidden" name="hdn_campo_padrao" value="<?=$campo_padrao?>">
+    </td>
+    <td><input type="button" name="btn_consulta" value="Consulta" title="Nova Consulta" class="botao" onclick="sbmit()"></td>
+  </tr>
+  <tr valign="center">
+    <td colspan="6">
+<? if ($rows>0) { ?>
+<table width="100%" align="center" border="0">
+  <tr>
+    <th width="80">RE</th>
+    <th>NOME</th>
+  </tr>
+    <? while ($tupula = $conn->fetch_row()) { ?>
+        <? if ($cor == 'background_color1') $cor = 'background_color2'; else $cor = 'background_color1'; ?>
+        <tr>
+            <td align="center" class="<?=$cor?>" ><a href="javascript:consulta_ret('<?=$tupula["iagID"]?>')"><?=$tupula["iagID"]?></a></td>
+            <td class="<?=$cor?>" ><a href="javascript:consulta_ret('<?=$tupula["iagID"]?>')"><?=$tupula["NOMEEDIFICACAO"]?></a></td>
+        </tr>
+        <?
+    }
+    $limit_ant = $limit-$restringir;
+    $limit += $restringir;
+    ?>
+<script language="javascript" type="text/javascript">
+    function envia(tipo) {
+    switch (tipo) {
+        case 1:
+        document.form1.hdn_limit.value='0';
+        break;
+        case 2:
+        document.form1.hdn_limit.value='<?=$limit_ant?>';
+        break;
+        case 3:
+        document.form1.hdn_limit.value='<?=$limit?>';
+        break;
+        case 4:
+        document.form1.hdn_limit.value='<?=$fim*10?>';
+        break;
+    }
+    document.form1.submit();
+    }
+</script>
+<table width="90%" align="center">
+  <tr>
+<? if ($limit_ant>=0) { ?>
+    <td><input type="button" value="Primeiro" name="btn_primeiro" title="Primeiros 10 Registros" onclick="envia(1)" class="botao"></td>
+    <td><input type="button" value="Anterior" name="btn_anterior" title="10 Registros Anteriores" onclick="envia(2)" class="botao"></td>
+<? } else { ?>
+    <td><input type="button" value="Primeiro" name="btn_primeiro" title="Primeiros 10 Registros" onclick="envia(1)"  disabled="true"></td>
+    <td><input type="button" value="Anterior" name="btn_anterior" title="10 Registros Anteriores" onclick="envia(2)"  disabled="true"></td>
+<? } ?>
+<? if (($fim*10)>=$limit) { ?>
+    <td>
+    <input type="button" value="Próximo" name="btn_proximo" title="Próximos 10 Registros" onclick="envia(3)" class="botao">
+    </td>
+    <td><input type="button" value="Último" name="btn_ultimo" title="Últimos 10 Registros" onclick="envia(4)" class="botao"></td>
+<? } else { ?>
+    <td>
+    <input type="button" value="Próximo" name="btn_proximo" title="Próximos 10 Registros" onclick="envia(3)"  disabled="true">
+    </td>
+    <td><input type="button" value="Último" name="btn_ultimo" title="Últimos 10 Registros" onclick="envia(4)"  disabled="true"></td>
+<? } ?>
+  </tr>
+</table>
+</table>
+</td>
+  </tr>
+</table>
+<?
+    } else {
+      if (@$ID_CIDADE != "") {
+        ?>
+        <script language="javascript" type="text/javascript">
+            alert("Registros não encontrados!!!");
+        </script>
+        <?
+      }
+    }
+?>
+</fieldset>
+</form>
+</body>
+</html>

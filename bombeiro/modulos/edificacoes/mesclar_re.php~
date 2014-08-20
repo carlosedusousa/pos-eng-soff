@@ -1,0 +1,621 @@
+<?//	echo "<pre>"; print_r($_POST); echo "</pre>";
+
+  $erro = "";
+  require_once 'lib/loader.php';
+
+  $conn = new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+  if ($conn->get_status()==false) die($conn->get_msg());
+
+	$arquivo = 'mesclar_re.php';
+
+	$conn->query("SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA = '$arquivo'");
+	if($conn->num_rows()>0) $rotina = $conn->fetch_row(); else {
+		$rotina['ID_ROTINA'] = '00';
+		$rotina['NM_ROTINA'] = 'Rotina não Cadastrada!';
+		
+		exit;
+	}
+
+	$global_obj_sessao->load($rotina["ID_ROTINA"]);
+	$usuario = $global_obj_sessao->is_logged_in();
+
+
+if ($_POST["btn_re"]){
+     foreach ($_POST as $indice => $valor)  {
+		if(is_numeric(strpos($indice,'cbx_func_estab'))) {
+			$arr = explode('_',$indice);
+			$id_vist_func = $arr[3];
+			$id_estab = $arr[4];
+			
+
+		$sql_estab = "UPDATE " . TBL_ESTABELECIMENTO . " SET ".
+						"ID_EDIFICACAO = '$_POST[re_recebe]' ".
+						"where ID_CIDADE = '$_POST[cmb_id_cidade]' and ID_ESTABELECIMENTO = '$id_estab';";
+		// 			echo "sql: $sql_estab<br>"; 
+					$conn->query($sql_estab);
+					if ($conn->get_status()==false) {die($conn->get_msg());}
+		
+		
+		$sql_vist = "UPDATE " . TBL_VIST_ESTAB . " SET ".
+						"ID_EDIFICACAO = '$_POST[re_recebe]', ".
+						"ID_EDIFICACAO_ANTIGO = '$_POST[re_perde]' ".
+						"where ID_CIDADE_VISTORIA = '$_POST[cmb_id_cidade]' and ID_VISTORIA_FUNC = '$id_vist_func';";
+		//  			echo "sql: $sql_vist<br>"; 
+					$conn->query($sql_vist);
+					if ($conn->get_status()==false) {
+						die($conn->get_msg());
+					}
+	    }
+     
+if(is_numeric(strpos($indice,'cbx_analise'))) {
+			$arr = explode('_',$indice);
+			$id_prot = $arr[2];
+					
+
+		$sql_analise = "UPDATE " . TBL_ANALISE . " SET ".
+						"ID_EDIFICACAO = '$_POST[re_recebe]', ".
+						"ID_EDIFICACAO_ANTIGO = '$_POST[re_perde]' ".
+						"where ID_CIDADE = '$_POST[cmb_id_cidade]' and ID_PROTOCOLO = '$id_prot';";
+// 					echo "sql: $sql_estab<br>"; exit;
+					$conn->query($sql_analise);
+					if ($conn->get_status()==false) {die($conn->get_msg());}
+		
+	
+	    }
+if(is_numeric(strpos($indice,'cbx_habitese'))) {
+			$arr = explode('_',$indice);
+			$id_habitese = $arr[2];
+					
+
+		$sql_hab = "UPDATE " . TBL_VISTORIA_HABITESE . " SET ".
+						"ID_EDIFICACAO = '$_POST[re_recebe]', ".
+						"ID_EDIFICACAO_ANTIGO = '$_POST[re_perde]' ".
+						"where ID_CIDADE = '$_POST[cmb_id_cidade]' and ID_PROT_HABITESE = '$id_habitese';";
+// 					echo "sql: $sql_hab<br>"; exit;
+					$conn->query($sql_hab);
+					if ($conn->get_status()==false) {die($conn->get_msg());}
+		
+	
+	    }
+
+if(is_numeric(strpos($indice,'cbx_manut'))) {
+			$arr = explode('_',$indice);
+			$id_manut = $arr[2];
+					
+
+		$sql_hab = "UPDATE " . TBL_VISTORIA_MANUT . " SET ".
+						"ID_EDIFICACAO = '$_POST[re_recebe]', ".
+						"ID_EDIFICACAO_ANTIGO = '$_POST[re_perde]' ".
+						"where ID_CIDADE = '$_POST[cmb_id_cidade]' and ID_PROT_MANUTENCAO = '$id_manut';";
+//  					echo "sql: $sql_hab<br>"; exit;
+					$conn->query($sql_hab);
+					if ($conn->get_status()==false) {die($conn->get_msg());}
+	    }
+	}
+?><script>window.location="mesclar_re.php";</script><?
+}
+
+
+// include ('../../templates/head.htm');
+
+
+  $conn= new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+  if ($conn->get_status()==false) die($conn->get_msg());
+
+  $arquivo = "mesclar_re.php";
+  $sql = "SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA ='".$arquivo."'";
+  $res = $conn->query($sql);
+  $rows_rotina=$conn->num_rows();
+  if ($rows_rotina>0) $rotina = $conn->fetch_row();
+
+  $global_obj_sessao->load($rotina["ID_ROTINA"]);
+  $usuario=$global_obj_sessao->is_logged_in();
+
+$ID_EDIFICACAO = formataCampo($_POST["re_perde"],'N','D');
+$ID_EDIFICACAO2 = formataCampo($_POST["re_recebe"],'N','D'); 
+$ID_CIDADE = formataCampo($_POST["cmb_id_cidade"],'N');
+
+// echo "$ID_EDIFICACAO, $ID_EDIFICACAO2, $ID_CIDADE "; exit;
+
+if($ID_EDIFICACAO and $ID_EDIFICACAO2 and $ID_CIDADE){
+
+		$sql="SELECT
+		".TBL_EDIFICACAO.".ID_CIDADE,
+		".TBL_EDIFICACAO.".ID_EDIFICACAO,
+		".TBL_EDIFICACAO.".ID_CNPJ_CPF_PROPRIETARIO,
+		".TBL_EDIFICACAO.".NM_EDIFICACAO,
+		".TBL_EDIFICACAO.".NM_FANTASIA_1,
+		".TBL_EDIFICACAO.".NR_EDIFICACAO,
+		".TBL_EDIFICACAO.".ID_LOGRADOURO,
+		".TBL_LOGRADOURO.".NM_LOGRADOURO,
+		".TBL_PESSOA.".NM_PESSOA,
+		".TBL_BAIRROS.".NM_BAIRROS,
+		".TBL_PESSOA.".NM_PESSOA AS NM_PROPRIETARIO
+		FROM ".TBL_EDIFICACAO." ".
+			"LEFT JOIN ".TBL_CEP." ON (".
+				TBL_EDIFICACAO.".ID_CEP=".TBL_CEP.".ID_CEP AND ".
+				TBL_EDIFICACAO.".ID_LOGRADOURO=".TBL_CEP.".ID_LOGRADOURO AND ".
+				TBL_EDIFICACAO.".ID_CIDADE_CEP=".TBL_CEP.".ID_CIDADE)	
+			LEFT JOIN ".TBL_LOGRADOURO." ON (".
+				TBL_CEP.".ID_LOGRADOURO=".TBL_LOGRADOURO.".ID_LOGRADOURO AND ".
+				TBL_LOGRADOURO.".ID_CIDADE=".TBL_LOGRADOURO.".ID_CIDADE)
+			LEFT JOIN ".TBL_BAIRROS." ON (".
+				TBL_LOGRADOURO.".ID_BAIRROS=".TBL_BAIRROS.".ID_BAIRROS AND ".
+				TBL_LOGRADOURO.".ID_CIDADE_BAIRROS=".TBL_BAIRROS.".ID_CIDADE)
+			LEFT JOIN ".TBL_PESSOA." ON (".
+				TBL_EDIFICACAO.".ID_CIDADE_PESSOA=".TBL_PESSOA.".ID_CIDADE AND ".
+				TBL_EDIFICACAO.".ID_CNPJ_CPF_PROPRIETARIO=".TBL_PESSOA.".ID_CNPJ_CPF)
+		WHERE ".
+			TBL_EDIFICACAO.".ID_CIDADE = $ID_CIDADE AND ".
+			TBL_EDIFICACAO.".ID_EDIFICACAO=$ID_EDIFICACAO";
+
+
+//  echo "$sql";exit;
+ $res= $conn->query($sql);
+				  $rows_carga=$conn->num_rows();
+				  if ($rows_carga>0) {
+				    $carga = $conn->fetch_row();
+				  } else {?>
+					<script>
+					   alert ("Re <?=$ID_EDIFICACAO?> não localizada.");
+					   window.location="mesclar_re.php";
+					</script>
+				  <?}
+// echo "<pre>"; print_r($carga); echo "</pre>"; exit;
+
+ 				  $NR_CNPJ_CPF_PROPRIETARIO =$carga["ID_CNPJ_CPF_PROPRIETARIO"];
+				  $NM_PROPRIETARIO          =$carga["NM_PROPRIETARIO"];
+   				  $NM_FANTASIA_1            =$carga["NM_FANTASIA_1"];
+				  $NM_LOGRADOURO            =$carga["NM_LOGRADOURO"];
+				  $NR_EDIFICACAO            =$carga["NR_EDIFICACAO"];
+				  $NM_EDIFICACOES           =$carga["NM_EDIFICACAO"];
+		  		  $NM_BAIRRO                =$carga["NM_BAIRROS"];
+
+$sql2="SELECT
+		".TBL_EDIFICACAO.".ID_CIDADE,
+		".TBL_EDIFICACAO.".ID_EDIFICACAO,
+		".TBL_EDIFICACAO.".ID_CNPJ_CPF_PROPRIETARIO,
+		".TBL_EDIFICACAO.".NM_EDIFICACAO,
+		".TBL_EDIFICACAO.".NM_FANTASIA_1,
+		".TBL_EDIFICACAO.".NR_EDIFICACAO,
+		".TBL_EDIFICACAO.".ID_LOGRADOURO,
+		".TBL_LOGRADOURO.".NM_LOGRADOURO,
+		".TBL_PESSOA.".NM_PESSOA,
+		".TBL_BAIRROS.".NM_BAIRROS,
+		".TBL_PESSOA.".NM_PESSOA AS NM_PROPRIETARIO
+		FROM ".TBL_EDIFICACAO." ".
+			"LEFT JOIN ".TBL_CEP." ON (".
+				TBL_EDIFICACAO.".ID_CEP=".TBL_CEP.".ID_CEP AND ".
+				TBL_EDIFICACAO.".ID_LOGRADOURO=".TBL_CEP.".ID_LOGRADOURO AND ".
+				TBL_EDIFICACAO.".ID_CIDADE_CEP=".TBL_CEP.".ID_CIDADE)	
+			LEFT JOIN ".TBL_LOGRADOURO." ON (".
+				TBL_CEP.".ID_LOGRADOURO=".TBL_LOGRADOURO.".ID_LOGRADOURO AND ".
+				TBL_LOGRADOURO.".ID_CIDADE=".TBL_LOGRADOURO.".ID_CIDADE)
+			LEFT JOIN ".TBL_BAIRROS." ON (".
+				TBL_LOGRADOURO.".ID_BAIRROS=".TBL_BAIRROS.".ID_BAIRROS AND ".
+				TBL_LOGRADOURO.".ID_CIDADE_BAIRROS=".TBL_BAIRROS.".ID_CIDADE)
+			LEFT JOIN ".TBL_PESSOA." ON (".
+				TBL_EDIFICACAO.".ID_CIDADE_PESSOA=".TBL_PESSOA.".ID_CIDADE AND ".
+				TBL_EDIFICACAO.".ID_CNPJ_CPF_PROPRIETARIO=".TBL_PESSOA.".ID_CNPJ_CPF)
+		WHERE ".
+			TBL_EDIFICACAO.".ID_CIDADE = $ID_CIDADE AND ".
+			TBL_EDIFICACAO.".ID_EDIFICACAO=$ID_EDIFICACAO2";
+$res= $conn->query($sql2);
+
+				  $rows_carga=$conn->num_rows();
+				  if ($rows_carga>0) {
+				    $carga2 = $conn->fetch_row();
+ 				  } else {?>
+					<script>
+					   alert ("Re <?=$ID_EDIFICACAO2?> não localizada.");
+					   window.location="mesclar_re.php";
+					</script>
+				  <?}
+// echo "<pre>"; print_r($carga2); echo "</pre>"; exit;
+
+  				  $NR_CNPJ_CPF_PROPRIETARIO2 =$carga2["ID_CNPJ_CPF_PROPRIETARIO"];
+ 				  $NM_PROPRIETARIO2          =$carga2["NM_PROPRIETARIO"];
+   				  $NM_FANTASIA_2            =$carga2["NM_FANTASIA_1"];
+ 				  $NM_LOGRADOURO2            =$carga2["NM_LOGRADOURO"];
+ 				  $NR_EDIFICACAO2            =$carga2["NR_EDIFICACAO"];
+ 				  $NM_EDIFICACOES2           =$carga2["NM_EDIFICACAO"];
+ 		  		  $NM_BAIRRO2                =$carga2["NM_BAIRROS"];
+}
+?>
+
+<script language="javascript" type="text/javascript">
+function gera_pdf(arquivo,cidade,chave){
+  window.open(arquivo+cidade+'&'+chave,"relprot","top=5000,left=5000,screenY=5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+}
+function msg_confirma(){
+	mesclar = confirm("Deseja realmente transferir os dados da RE <?=$ID_EDIFICACAO?> para RE <?=$ID_EDIFICACAO2?>?")	
+	if ( mesclar ==false){// testa se o usuario clicou em cancelar
+	alert("Operação cancelada")
+
+	}
+	if ( mesclar ==true){// testa se o usuario clicou em ok
+	alert("Dados Transferidos com sucesso")
+
+	}
+}
+function limpar() {
+	window.location="mesclar_re.php";
+}
+</script>
+
+<body onload="ajustaspan()">
+<?
+//  include ('../../templates/cab.htm');
+$teste1= "dado1";
+?>
+   
+       <form target="_self" enctype="multipart/form-data" method="post" name="frm_mesclar_re">
+        	<table width="100%">
+
+			<tr>
+			  <td> 
+				<fieldset> 
+				  <legend><b> Mesclar RE </b></legend>
+					<table width="100%" cellspacing="2" border="0" cellpadding="2" align="center">
+						<tr>
+							<td align="right"> RE perde processo&nbsp;</td>
+							<td> <input type="text"  size="11" maxlength="11" name="re_perde" class="campo" value="<?=$_POST["re_perde"]?>"></td>
+							<td align="right"> RE recebe processo&nbsp;</td>
+							<td><input type= "text" size="11" maxlength="11" name= "re_recebe" class="campo" value="<?=$_POST["re_recebe"]?>"></td>
+						</tr>
+						
+<!-- 						<tr><td colspan="4"><hr class="hr2" /></td></tr> -->
+
+						<tr>
+							<td align="right"> Cidade&nbsp;</td>
+							<td><select name="cmb_id_cidade" class="campo_obr">	
+									<option value="">-------</option>
+									<?
+										$sql = "SELECT ".TBL_CIDADE.".ID_CIDADE ID_CIDADE,NM_CIDADE FROM ".TBL_CIDADE." LEFT JOIN ".TBL_CIDADES_USR." USING(ID_CIDADE) WHERE ".TBL_CIDADES_USR.".ID_USUARIO='$usuario' AND ".TBL_CIDADE.".ID_UF='SC' ORDER BY NM_CIDADE";
+										$res = $conn->query($sql);
+										if ($conn->get_status()==false) die($conn->get_msg());
+										while ($tupula = $conn->fetch_row()) {?>
+											<? if ($tupula['ID_CIDADE'] == $_POST['cmb_id_cidade']) $sel = 'selected="selected"'; else $sel = ''; ?>
+											<option value="<?=$tupula['ID_CIDADE']?>" <?=$sel?> ><?=$tupula['NM_CIDADE']?></option>
+										<? } ?>
+								</select>
+							</td> 
+							<td>&nbsp;</td>
+							<td>
+
+									<input type="submit" name="btn_enviar" value="Pesquisar RE" align="right" class="botao" >
+							</td>
+							
+						</tr>
+        		  </table>  
+
+ 					 <fieldset>
+	                          <legend>Dados Gerais</legend>
+	                            <table width="100%" cellspacing="1" border="0" cellpadding="5">
+							            <tr style="background-color:#F0FFF0;">
+							              <th colspan="1">Dados</th>
+										  <th colspan="1">RE perde processo</th>
+							              <th colspan="1">RE recebe processo</th>
+							            </tr>     
+             
+											
+	                              <tr align="center" style="background-color : #B2DFEE;">
+							              <td>CNPJ</td>
+										  <td><?=$NR_CNPJ_CPF_PROPRIETARIO?></td>
+							              <td><?=$NR_CNPJ_CPF_PROPRIETARIO2?></td>
+								  </tr>
+	                              <tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>Nome proprietário</td>
+										  <td><?=$NM_PROPRIETARIO?></td>
+							              <td><?=$NM_PROPRIETARIO2?></td>
+								  </tr>
+ 								<tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>Nome Edificação</td>
+										  <td><?=$NM_EDIFICACOES?></td>
+							              <td><?=$NM_EDIFICACOES2?></td>
+								  </tr>
+ 								<tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>Nome Fantasia</td>
+										  <td><?=$NM_FANTASIA_1?></td>
+							              <td><?=$NM_FANTASIA_2?></td>
+								  </tr>
+ 								<tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>Logradouro</td>
+										  <td><?=$NM_LOGRADOURO?></td>
+							              <td><?=$NM_LOGRADOURO2?></td>
+								  </tr>
+ 								<tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>N°</td>
+										  <td><?=$NR_EDIFICACAO?></td>
+							              <td><?=$NR_EDIFICACAO2?></td>
+								  </tr>
+ 								<tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td>Bairro</td>
+										  <td><?=$NM_BAIRRO?></td>
+							              <td><?=$NM_BAIRRO2?></td>
+								  </tr>
+                            </table>
+                          </fieldset>
+						  <tr align="center">
+							<td>
+                             <legend><b> Dados Re Perde Processo <?=$_POST["re_perde"]?></b></legend>
+							</td>
+						  </tr>
+						  <tr>
+						    <td>    
+                			 <fieldset>
+	                          <legend>Análise</legend>
+	                            <table width="100%" cellspacing="1" border="0" cellpadding="5">
+							            <tr style="background-color:#4ab;">
+							              <th>Selecionar</th>
+										  <th>Protocolo</th>
+							              <th>Status</th>
+							              <th>Observação</th>
+							              <th>Empresa</th>
+							            </tr>	                            
+											<?
+											   $sql= "SELECT ".TBL_ANALISE.".ID_ANALISE, ".TBL_ANALISE.".ID_EDIFICACAO, ".TBL_ANALISE.".ID_PROTOCOLO,".TBL_ANALISE.".CH_PARCER, 
+											                 ".TBL_ANALISE.".DE_INDEFERIMENTO, ".TBL_PROTOCOLOS.".ID_TIPO_SOLICITACAO, 
+											                 ".TBL_PROTOCOLOS.".ID_SOLICITACAO, ".TBL_PESSOA.".NM_PESSOA
+											            FROM ".TBL_ANALISE." 
+											       LEFT JOIN ".TBL_PESSOA." ON(".TBL_ANALISE.".ID_CNPJ_CPF_SOLICITANTE=".TBL_PESSOA.".ID_CNPJ_CPF
+											             AND ".TBL_ANALISE.".ID_CIDADE_PESSOA=".TBL_PESSOA.".ID_CIDADE)
+											       LEFT JOIN ".TBL_CIDADE." ON(".TBL_ANALISE.".ID_CIDADE=".TBL_CIDADE.".ID_CIDADE)
+											       LEFT JOIN ".TBL_PROTOCOLOS." ON(".TBL_PROTOCOLOS.".ID_PROTOCOLO=".TBL_ANALISE.".ID_PROTOCOLO
+											             AND ".TBL_PROTOCOLOS.".ID_CIDADE=".$ID_CIDADE.")
+											           WHERE ".TBL_ANALISE.".ID_EDIFICACAO=".$ID_EDIFICACAO." 
+  				                                  AND ".TBL_ANALISE.".ID_CIDADE=".$ID_CIDADE;  
+//   				                        echo 'sql: '.$sql;exit;        
+												$res= $conn->query($sql);
+												if ($conn->get_status()==false) {
+												die($conn->get_msg());
+												}
+												$rows_proj=$conn->num_rows();
+												if ($rows_proj>0) {
+													$count=0;
+													while ($tupula = $conn->fetch_row()) {
+															$ID_PROTOCOLO      =$tupula["ID_PROTOCOLO"];
+															$CH_PARECER        =$tupula['CH_PARCER'];
+															$OBS               =$tupula['DE_INDEFERIMENTO'];
+															$ID_SOLICITACAO    =$tupula['ID_SOLICITACAO'];
+															$ID_TP_SOLICITACAO =$tupula['ID_TIPO_SOLICITACAO'];
+															$ID_ANALISE			=$tupula['ID_ANALISE'];
+															$NM_PESSOA         =$tupula['NM_PESSOA'];
+														if ($count==0) {
+															$cor_bak= "#B2DFEE;";
+															$count=1;
+							                  			}else {
+															$cor_bak=COR_LINHA02;
+															$count=0;
+							                  }
+				                        ?> 
+	                                <tr alskype:luanaawkign="center" style="background-color : <?=$cor_bak?>;" >
+										  <td><input type="checkbox" name="cbx_analise_<?=$ID_PROTOCOLO?>"></td>
+							              <td><?=$ID_PROTOCOLO?></td>
+							              <td><?  if($CH_PARECER=='D'){ echo 'Deferido';}else{echo 'Indeferido';}?></td>
+							              <td style="cursor : pointer;" onclick="gera_pdf('../analise/ranalise.php?','txt_id_cidade=<?=$ID_CIDADE?>','txt_id_analise=<?=$ID_ANALISE?>')"><? echo '(ver detalhes)'; ?></td>
+							              <td><?=$NM_PESSOA?></td>
+	                              </tr>
+							           <?
+													}
+
+							              } else {
+							           ?>
+							            <tr style="background-color : #9bd5ff;">
+							              <td colspan="5">NÃO EXITEM PROCESSOS PARA ESTE SOLICITANTE NESTA CIDADE</td>
+							            </tr>
+							           <?
+							              }
+							            ?> 	                              
+                          </td></tr>  
+						  </table>
+                          </fieldset>	
+							     <fieldset>
+	                          <legend>Habite-se</legend>
+	                            <table width="100%" cellspacing="1" border="0" cellpadding="5">
+							            <tr style="background-color:#4ab;">
+							              <th>Selecionar</th>
+										  <th>Protocolo</th>
+							              <th>Status</th>
+							              <th>Observação</th>
+							              <th>Empresa</th>
+							            </tr>	                            
+											<?
+					                      $sql="SELECT ".TBL_PROT_HABITESE.".ID_PROT_HABITESE, 
+					                                   ".TBL_VISTORIA_HABITESE.".CH_PARECER,
+					                                   ".TBL_VISTORIA_HABITESE.".ID_VISTO_HABITESE,
+					                                   ".TBL_VISTORIA_HABITESE.".DE_INDEFERIMENTO,
+					                                   ".TBL_PESSOA.".NM_PESSOA
+					                              FROM ".TBL_VISTORIA_HABITESE."
+					                         LEFT JOIN ".TBL_PESSOA." ON(".TBL_VISTORIA_HABITESE.".ID_CNPJ_CPF_SOLICITANTE=".TBL_PESSOA.".ID_CNPJ_CPF
+											             AND ".TBL_VISTORIA_HABITESE.".ID_CIDADE_PESSOA=".TBL_PESSOA.".ID_CIDADE)     
+					                         LEFT JOIN ".TBL_PROT_HABITESE." ON (".TBL_PROT_HABITESE.".ID_CIDADE=".TBL_VISTORIA_HABITESE.".ID_CIDADE 
+					                               AND ".TBL_PROT_HABITESE.".ID_PROT_HABITESE=".TBL_VISTORIA_HABITESE.".ID_PROT_HABITESE) 
+					                             WHERE ".TBL_VISTORIA_HABITESE.".ID_CIDADE = $ID_CIDADE 
+					                               AND ".TBL_VISTORIA_HABITESE.".ID_EDIFICACAO=$ID_EDIFICACAO
+					                          ORDER BY ".TBL_PROT_HABITESE.".ID_PROT_HABITESE,".TBL_VISTORIA_HABITESE.".ID_VISTO_HABITESE";
+  				                        //echo'sql: '.$sql;          
+				                        $res= $conn->query($sql);
+				                        if ($conn->get_status()==false) {
+				                          die($conn->get_msg());
+				                        }
+							              $rows_proj=$conn->num_rows();
+							              if ($rows_proj>0) {
+							                $count=0;
+							                while ($tupula = $conn->fetch_row()) {
+													  $ID_PROTOCOLO      =$tupula['ID_PROT_HABITESE'];
+													  $CH_PARECER        =$tupula['CH_PARECER'];
+													  $OBS               =$tupula['DE_INDEFERIMENTO'];
+													  $ID_VISTO_HABITESE =$tupula['ID_VISTO_HABITESE'];
+													  $NM_PESSOA         =$tupula['NM_PESSOA'];
+                                              if ($count==0) {
+							                    $cor_bak=COR_LINHA01;
+							                    $count=1;
+							                  } else {
+							                    $cor_bak=COR_LINHA02;
+							                    $count=0;
+							                  }
+				                       ?> 
+	                              <tr align="center" style="background-color : <?=$cor_bak?>;">
+							              <td><input type="checkbox" name="cbx_habitese_<?=$ID_PROTOCOLO?>"></td>
+ 										  <td><?=$ID_PROTOCOLO?></td>
+							              <td><?  if($CH_PARECER=='D'){ echo 'Deferido';}else{echo 'Indeferido';}?></td>
+							              <td style="cursor : pointer;" onclick="gera_pdf('../habitese/rvist_habitese.php?','txt_id_cidade=<?=$ID_CIDADE?>','txt_vist_habitese=<?=$ID_VISTO_HABITESE?>')"><?echo '(ver detalhes)' ?></td>
+							              <td><?=$NM_PESSOA?></td>
+	                              </tr>
+							           <?
+							           }
+							              } else {
+							           ?>
+							            <tr style="background-color : #9bd5ff;">
+							              <td colspan="5">NÃO EXITEM PROCESSOS PARA ESTE SOLICITANTE NESTA CIDADE</td>
+							            </tr>
+							           <?}?> 	                              
+                            </table>
+                          </fieldset>	
+							<fieldset>
+	                          <legend>Funcionamento</legend>
+	                            <table width="100%" cellspacing="1" border="0" cellpadding="5">
+							            <tr style="background-color:#4ab;">
+							              <th>Selecionar</th>
+										  <th>Protocolo</th>
+							              <th>Status</th>
+							              <th>Observação</th>
+							              <th>Empresa</th>
+							            </tr>	                            
+											<?
+							              $sql="SELECT ".TBL_PROT_FUNC.".ID_PROT_FUNC, 
+							                           ".TBL_VISTORIA_FUNC.".CH_PARECER, 
+					                                   ".TBL_VISTORIA_FUNC.".DE_OBSERVACOES, 
+					                                   ".TBL_VISTORIA_FUNC.".ID_VISTORIA_FUNC,
+													   ".TBL_VIST_ESTAB.".ID_ESTABELECIMENTO,
+					                                   ".TBL_PESSOA.".NM_PESSOA
+					                              FROM ".TBL_VISTORIA_FUNC." 
+					                         LEFT JOIN ".TBL_PESSOA." ON(".TBL_VISTORIA_FUNC.".ID_CNPJ_EMPRESA=".TBL_PESSOA.".ID_CNPJ_CPF
+											             AND ".TBL_VISTORIA_FUNC.".ID_CIDADE_EMPRESA=".TBL_PESSOA.".ID_CIDADE)     
+					                         LEFT JOIN ".TBL_PROT_FUNC." ON (".TBL_VISTORIA_FUNC.".ID_PROT_FUNC=".TBL_PROT_FUNC.".ID_PROT_FUNC 
+					                               AND ".TBL_VISTORIA_FUNC.".ID_CIDADE=".TBL_PROT_FUNC.".ID_CIDADE) 
+					                         LEFT JOIN ".TBL_VIST_ESTAB." ON (".TBL_VIST_ESTAB.".ID_CIDADE_VISTORIA=".TBL_VISTORIA_FUNC.".ID_CIDADE
+					                               AND ".TBL_VIST_ESTAB.".ID_VISTORIA_FUNC=".TBL_VISTORIA_FUNC.".ID_VISTORIA_FUNC)
+					                             WHERE ".TBL_VISTORIA_FUNC.".ID_CIDADE = $ID_CIDADE
+					                               AND ".TBL_VIST_ESTAB.".ID_EDIFICACAO=$ID_EDIFICACAO
+					                          GROUP BY ".TBL_VISTORIA_FUNC.".ID_CIDADE, ".TBL_VISTORIA_FUNC.".ID_VISTORIA_FUNC";
+//    				                        echo'sql: '.$sql;exit;
+				                        $res= $conn->query($sql);
+				                        if ($conn->get_status()==false) {
+				                          die($conn->get_msg());
+				                        }
+							              $rows_proj=$conn->num_rows();
+							              if ($rows_proj>0) {
+							                $count=0;
+							                while ($tupula = $conn->fetch_row()) {
+													  $ID_PROTOCOLO      =$tupula["ID_PROT_FUNC"];
+													  $CH_PARECER        =$tupula['CH_PARECER'];
+													  $OBS               =$tupula['DE_OBSERVACOES'];
+													  $ID_VISTORIA_FUNC  =$tupula['ID_VISTORIA_FUNC'];
+													  $NM_PESSOA         =$tupula['NM_PESSOA'];
+													  $ID_ESTABELECIMENTO =$tupula['ID_ESTABELECIMENTO'];
+							                  if ($count==0) {
+							                    $cor_bak=COR_LINHA01;
+							                    $count=1;
+							                  } else {
+							                    $cor_bak=COR_LINHA02;
+							                    $count=0;
+							                  }
+				                      ?> 
+									<tr align="center" style="background-color : <?=$cor_bak?>;">
+	    								  <td><input type="checkbox" name="cbx_func_estab_<?=$ID_VISTORIA_FUNC?>_<?=$ID_ESTABELECIMENTO?>"></td>
+										  <td><?=$ID_PROTOCOLO?></td>
+							              <td><?if($CH_PARECER=='D'){ echo 'Deferido';}else{echo 'Indeferido';}?></td>
+							                <td style="cursor : pointer;" onclick="gera_pdf('./modulos/funcionamento/rvist_funcionamento.php?','txt_id_cidade=<?=$ID_CIDADE?>','txt_vist_habitese=<?=$ID_VISTORIA_FUNC?>','hdn_id_protocolo=<?=$ID_PROTOCOLO?>')"><? echo '(ver detalhes)'; ?></td>
+							              <td><?=$NM_PESSOA?></td>
+	                              </tr>
+							           <?
+							           }
+							              } else {
+							           ?>
+							            <tr style="background-color : #9bd5ff;">
+							              <td colspan="5">NÃO EXITEM PROCESSOS PARA ESTE SOLICITANTE NESTA CIDADE</td>
+							            </tr>
+							           <?}?> 	                              
+                            </table>
+                          </fieldset>    
+						        <fieldset>
+						          <legend>Manutenção</legend>
+	                            <table width="100%" cellspacing="1" border="0" cellpadding="5">
+							            <tr style="background-color:#4ab;">
+							              <th>Selecionar</th>
+										  <th>Protocolo</th>
+							              <th>Status</th>
+							              <th>Observação</th>
+							              <th>Empresa</th>
+							            </tr>
+						            <?
+										$sql="SELECT ".TBL_PROT_MANUT.".ID_PROT_MANUTENCAO, 
+														".TBL_VISTORIA_MANUT.".CH_PARECER, 
+														".TBL_VISTORIA_MANUT.".ID_EDIFICACAO, 
+														".TBL_VISTORIA_MANUT.".ID_VIST_MANUTENCAO,
+														".TBL_VISTORIA_MANUT.".DE_OBSERVACOES,
+														".TBL_PESSOA.".NM_PESSOA
+													FROM ".TBL_VISTORIA_MANUT." 
+												LEFT JOIN ".TBL_PESSOA." ON(".TBL_VISTORIA_MANUT.".ID_CNPJCPF_SOLICITANTE=".TBL_PESSOA.".ID_CNPJ_CPF
+															AND ".TBL_VISTORIA_MANUT.".ID_CIDADE_SOLICITANTE=".TBL_PESSOA.".ID_CIDADE)     
+												LEFT JOIN ".TBL_PROT_MANUT." ON (".TBL_VISTORIA_MANUT.".ID_PROT_MANUTENCAO=".TBL_PROT_MANUT.".ID_PROT_MANUTENCAO 
+													AND ".TBL_VISTORIA_MANUT.".ID_CIDADE=".TBL_PROT_MANUT.".ID_CIDADE) 
+													WHERE ".TBL_VISTORIA_MANUT.".ID_CIDADE = $ID_CIDADE 
+													AND ".TBL_VISTORIA_MANUT.".ID_EDIFICACAO=$ID_EDIFICACAO
+												GROUP BY ".TBL_PROT_MANUT.".ID_PROT_MANUTENCAO, ".TBL_VISTORIA_MANUT.".ID_VIST_MANUTENCAO";
+// 											echo'sqlmanut: '.$sql;          
+												$res= $conn->query($sql);
+												if ($conn->get_status()==false) {
+												die($conn->get_msg());
+												}
+												$rows_proj=$conn->num_rows();				                        
+												if ($rows_proj>0) {
+													$count=0;
+													while ($tupula = $conn->fetch_row()) {
+															$ID_PROTOCOLO        =$tupula["ID_PROT_MANUTENCAO"];
+															$CH_PARECER          =$tupula['CH_PARECER'];
+															$OBS                 =$tupula['DE_OBSERVACOES'];
+															$ID_VISTO_MANUTENCAO =$tupula['ID_VIST_MANUTENCAO'];
+															$NM_PESSOA           =$tupula['NM_PESSOA'];
+														if ($count==0) {
+														$cor_bak=COR_LINHA01;
+														$count=1;
+													} else {
+														$cor_bak=COR_LINHA02;
+														$count=0;
+													}
+				                      ?> 
+	                             <tr align="center" style="background-color : <?=$cor_bak?>;"> 					   		  <td><input type="checkbox" name="cbx_manut_<?=$ID_PROTOCOLO?>"></td>	
+										  <td><?=$ID_PROTOCOLO?></td>
+							              <td><?  if($CH_PARECER=='D'){ echo 'Deferido';}else{echo 'Indeferido';}?></td>
+							                 <td style="cursor : pointer;" onclick="gera_pdf('../manutencao/rvist_manutencao.php?','txt_id_cidade=<?=$ID_CIDADE?>','txt_vist_manutencao=<?=$ID_VISTO_MANUTENCAO?>')">	   			<? echo '(ver detalhes)'; ?></td>
+							              <td><?=$NM_PESSOA?></td>
+	                              </tr>
+							           <?}
+							              } else {?>
+							            <tr style="background-color : #9bd5ff;">
+							              <td colspan="5">NÃO EXITEM PROCESSOS PARA ESTE SOLICITANTE NESTA CIDADE</td>
+							            </tr>
+							           <?}?> 	                              
+                            		</table>
+						        </fieldset>     
+                                 </td>
+                      			 </tr>                                     
+							</fieldset>
+								</td>
+								</tr>	
+								<table align="center" border="0">							    
+								  <tr>	
+								    <td align="right">
+										<input type="submit" name="btn_re" onclick="msg_confirma()" value="Mesclar RE"  class="botao" >
+								    </td>
+									 <td align="left">
+										<input type="button" name="btn_limpar" value="Limpar" onclick="limpar()"  class="botao" >
+								    </td>
+								 </tr>
+        		                </table> 
+							</form>            
+<br><br>
+<?/* include ('../../templates/footer1.htm'); */?>

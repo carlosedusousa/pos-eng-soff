@@ -1,0 +1,50 @@
+              <tr valign="top" align="center">
+                <td align="center" colspan="4"><br>
+                <table width="50%" cellspacing="0" border="0" cellpadding="0" align="center">
+                    <tr align="center" valign="center">
+                      <td>
+<?
+      if ($global_inclusao=="S") {
+?>
+                        <input type="button" name="btn_novo" value="Novo" align="middle" title="Nova Registro" class="botao"  onClick="novo_reg()">
+<?
+      } else {
+?>
+                        <input type="button" name="btn_novo" value="Novo" align="middle" title="Nova Registro" class="botao"  onClick="novo_reg()" disabled="true">
+<?
+      }
+?>
+                      </td>
+                      <td>
+<?
+      if ($global_alteracao=="S") {
+?>
+                        <input type="button" name="btn_alterar" value="Alterar" align="middle" title="Altera o Registro" class="botao"  onClick="alterar_reg()">
+<?
+      } else {
+?>
+                        <input type="button" name="btn_alterar" value="Alterar" align="middle" title="Altera o Registro" class="botao" disabled="true"  onClick="alterar_reg()" disabled="true">
+<?
+      }
+?>
+                      </td>
+                      <td>
+<?
+      if (true) {
+?>
+                        <input type="button" name="btn_carregar" value="Carregar" align="middle" title="Carrega as Informações" class="botao"   onClick="carregar_reg()">
+<?
+      } else {
+?>
+                        <input type="button" name="btn_carregar" value="Carregar" align="middle" title="Carrega as Informações" class="botao"   disabled="true">
+<?
+      }
+?>
+                      </td>
+                      <td>
+                        <input type="button" name="btn_cancelar" value="Cancelar" align="middle" title="Cancelar Consulta" class="botao"  onClick="javascript:window.close();">
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>

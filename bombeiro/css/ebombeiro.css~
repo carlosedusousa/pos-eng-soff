@@ -1,0 +1,140 @@
+body { 
+    background-attachment : fixed;
+    background-image    : url("./../../imagens/brasao_fundo.gif");
+    background-repeat   : repeat;
+    margin-top          : 0px;
+    margin-left         : 0px;
+    margin-right        : 0px;
+    padding-bottom      : 0px;
+    padding-top         : 0px;
+    font-family         : arial, sans-serif;
+    font-size           : 0.8em;
+    color               : #008;
+}
+fieldset {
+    color               : #004;
+    background-color    : #fff;
+    border-top          : 1px solid #036;
+    border-bottom       : 1px solid #036;
+    border-left         : 1px solid #036;
+    border-right        : 1px solid #036;
+}
+table {
+    padding-top         : 0px;
+}
+th {
+    border-top          : 0px solid #333;
+    border-bottom       : 0px solid #333;
+    border-left         : 0px solid #333;
+    border-right        : 0px solid #333;
+    color               : #004;
+}
+td {
+    padding-left        : 0px;
+}
+a {
+    color               : #730;
+    text-decoration     : none;
+}
+a:hover {
+    color               : #b74;
+    text-decoration     : 1;
+    text-decoration     : underline; 
+}
+input {
+    border-top          : 1px solid #ccc;
+    border-left         : 1px solid #ccc;
+    border-bottom       : 1px solid #ccc;
+    border-right        : 1px solid #ccc;
+    border-collapse     : collapse;
+    color               : #012;
+}
+input.checkbox, select, textarea {
+    color               : #012;
+    border-top          : 1px solid #369;
+    border-left         : 1px solid #369;
+    border-bottom       : 1px solid #369;
+    border-right        : 1px solid #369;
+    border-collapse     : collapse;
+}
+input.button {
+    color               : #012;
+    background          : #f00;
+    border-top          : 2px solid #123;
+    border-left         : 2px solid #123;
+    border-bottom       : 2px solid #123;
+    border-right        : 2px solid #123;
+}
+.botao {
+    color               : #ddd;
+    border-top          : 2px solid #123;
+    border-left         : 2px solid #123;
+    border-bottom       : 2px solid #123;
+    border-right        : 2px solid #123;
+    background-image    : url("./../../imagens/rodape_azul.png");
+}
+.botao:hover, .botao:focus  {
+    color               : #0ff;
+    border-top          : 2px solid #000;
+    border-left         : 2px solid #000;
+    border-bottom       : 2px solid #000;
+    border-right        : 2px solid #000;
+    background-image    : url("./../../imagens/rodape_azul.png");
+}
+.campo_obr {
+    background-image : url('./../../imagens/obriga.gif');
+    background-position : top right;
+    background-repeat : no-repeat;
+    border-bottom-color : #d6d6d6;
+    border-bottom-style : solid;
+    border-left-color : #d6d6d6;
+    border-left-style : solid;
+    border-right-color : #d6d6d6;
+    border-right-style : solid;
+    border-top-color : #d6d6d6;
+    border-top-style : solid;
+    font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+    font-size : 12px;
+    font-weight : bold;
+    text-transform : uppercase;
+  }
+
+
+select:hover, textarea:hover, input:hover {
+    border              : #0aa 1px solid;
+}
+select:focus, textarea:focus, input:focus {
+    border              : #0aa 1px solid;
+    background-color    : #f1ffff;
+}
+.sem_bordas {
+    border-top          : 0px solid #ccc;
+    border-bottom       : 0px solid #ccc;
+    border-left         : 0px solid #ccc;
+    border-right        : 0px solid #ccc;
+    background          : #fff;
+}
+.background_color1 {
+    background-color    : #dee;
+}
+.background_color2 {
+    background-color    : #fff;
+}
+.rodape {
+    height              : 30px;
+    background-image    : url('./../imagens/rodape_azul.png'); 
+    background-repeat   : repeat-x;
+    text-align          : center;
+    font-size           : 12px;
+    font-weight         : bold; 
+    color               : #fff; 
+}
+.cabecalho {
+    height              : 80px;
+    background-image    : url('./../imagens/cabecalho_azul.png');
+    background-repeat   : repeat-x;
+    color               : #fff;
+    font-weight         : bold;
+    font-size           : 20px;
+    text-align          : center;
+}

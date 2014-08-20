@@ -1,0 +1,255 @@
+ <?
+//echo "<pre>"; print_r($_GET); echo "</pre>"; 
+  if ((@$_GET["cmb_id_cidade"]!="") && (@$_GET["hdn_id_protocolo"]!="")) $baixa_normal=1; else $baixa_normal=0;
+
+  if ($baixa_normal==1) include ('../../templates/head_cons.htm'); else include ('../../templates/head.htm');
+
+  $erro="";
+  require_once 'lib/loader.php';
+
+  $arquivo="boleto_avulso.php";
+  $conn= new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+  if ($conn->get_status()==false) die($conn->get_msg());
+
+  $sql= "SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA ='".$arquivo."'";
+  $res= $conn->query($sql);
+  $rows_rotina=$conn->num_rows();
+  if ($rows_rotina>0) $rotina = $conn->fetch_row();
+  
+  $global_obj_sessao->load($rotina["ID_ROTINA"]);
+  $usuario=$global_obj_sessao->is_logged_in();
+
+  if ((@$_POST["cmb_id_cidade"]!="") && (@$_POST["txt_vl_cobranca_doc"]!="") && (@$_POST["txt_vl_desc_abatimento"]!="")  && (@$_POST["txt_vl_multa_mora"]!="")  && (@$_POST["txt_vl_cobrado"]!="") && (@$_POST["txt_motivo"]!="") && ($global_alteracao=="S") && ($global_inclusao=="S")) {
+    $ID_CIDADE           	= formataCampo($_POST["cmb_id_cidade"],'N');
+    $VL_COBRANCA_DOC     	= formataCampo($_POST["txt_vl_cobranca_doc"],'D','D');
+    $VL_DESC_ABATIMENTO  	= formataCampo($_POST["txt_vl_desc_abatimento"],'D','D');
+    $VL_MULTA_MORA       	= formataCampo($_POST["txt_vl_multa_mora"],'D','D');
+    $MOTIVO              	= formataCampo($_POST["txt_motivo"],'N');
+    $SOLICITANTE         	= formataCampo($_POST["txt_solicitante"],'N');
+    $CPF 			= str_replace('.','',str_replace('/','',str_replace('-','',$_POST["txt_cpf"])));
+    $VL_COBRANCA         	= formataCampo($_POST["txt_vl_cobrado"],'D','D');
+    $VL_COBRADO          	= formataCampo($_POST["txt_vl_cobrado"],'D','D');
+    $DATA                	= formataCampo($_POST["txt_data"],'N');//0000-00-00
+    @$endereco			=$_POST["txt_endereco"];
+    @$dadosboleto["endereco"]	=$endereco;
+    $referente		= $_POST["txt_motivo"];
+    $dt_dia		= substr($DATA,0,2);
+    $dt_mes		= substr($DATA,2,2);
+    $dt_ano		= substr($DATA,4,4);
+    $DATA		= $dt_ano.'-'.$dt_mes.'-'.$dt_dia;
+    $geracao	= date("Y-m-d");
+    $MOTIVO		= '['.date("d/m/Y h:i:s").' '.$usuario.'] '.$MOTIVO;
+
+ 	$ultimo = "SELECT ".TBL_COB_BOLETO.".ID_PROT_AVULSO FROM ".TBL_COB_BOLETO." WHERE ".TBL_COB_BOLETO.".ID_CIDADE=$ID_CIDADE AND ID_PROT_AVULSO IS NOT NULL";
+ 	$conn->query($ultimo);
+
+ 	if ($conn->num_rows()>0) {
+	  while ($tupla = $conn->fetch_row()) $id_prot_avulso=$tupla["ID_PROT_AVULSO"]+1;
+ 	}
+
+	if(@$id_prot_avulso==NULL) $id_prot_avulso="1";
+
+    $sql="INSERT INTO ".TBL_COB_BOLETO." (DT_GERACAO, DT_VENCIMENTO, ID_CIDADE, VL_COBRANCA_DOC,  VL_DESC_ABATIMENTO, VL_MULTA_MORA, VL_COBRANCA, VL_TOTAL_COBRADO, MOTIVO, ID_CNPJ_CPF, ID_CIDADE_PESSOA, ID_PROT_AVULSO) VALUES ('$geracao','$DATA',$ID_CIDADE,$VL_COBRANCA_DOC,$VL_DESC_ABATIMENTO,$VL_MULTA_MORA,$VL_COBRANCA,$VL_COBRADO,'$MOTIVO','$CPF',$ID_CIDADE,$id_prot_avulso)";
+
+    $conn->query($sql);
+
+    if ($conn->get_status()==false) {
+      die ($res->get_msg());
+    } else {
+// echo "cpf: $CPF"; exit;
+		if(strlen($CPF)>11) {
+			$CPF_MASCARA = substr($CPF,0,2).'.'.substr($CPF,2,3).'.'.substr($CPF,5,3).'/'.substr($CPF,8,4).'-'.substr($CPF,12,2);
+		} else {
+			$CPF_MASCARA = substr($CPF,0,3).'.'.substr($CPF,3,3).'.'.substr($CPF,6,3).'-'.substr($CPF,9,2);
+		}
+
+// echo "cpf_macara: $CPF_MASCARA"; exit;
+		?>
+		<script language="JavaScript" type="text/javascript">//<!--
+		  alert("Boleto Gerado com Sucesso");
+		  window.location.href="../boleto/avulso.php?tipo=5&cmb_id_cidade=<?=$ID_CIDADE?>&txt_data=<?=$DATA?>&txt_vl_cobrado=<?=$VL_COBRADO?>&txt_vl_multa_mora=<?=$VL_MULTA_MORA?>&txt_vl_desc_abatimento=<?=$VL_DESC_ABATIMENTO?>&txt_vl_cobranca_doc=<?=$VL_COBRANCA_DOC?>&txt_id_prot_avulso=<?=$id_prot_avulso?>&txt_cpf=<?=$CPF_MASCARA?>&txt_nm_pessoa=<?=$SOLICITANTE?>&txt_endereco=<?=$endereco?>&txt_motivo=<?=$referente?>";
+		//--></script>
+		<?
+    }
+   } else {?><?
+     if (($global_alteracao=="S")&&($global_inclusao=="S")) {
+       if ((isset($_POST["cmb_id_cidade"])) && (isset($_POST["hdn_id_cobranca_boleto"])) && (isset($_POST["txt_vl_cobranca_doc"])) && (isset($_POST["txt_vl_desc_abatimento"])) && (isset($_POST["txt_vl_outras_deducoes"])) && (isset($_POST["txt_vl_multa_mora"])) && (isset($_POST["txt_vl_outros_acrescimos"])) && (isset($_POST["txt_vl_cobrado"])) && (isset($_POST["txt_motivo"]))) {
+         $erro= MSG_ERR_OBR;
+       }
+     } else {
+       $erro=MSG_ERR_ALT;
+     }
+   }
+?>
+<script language="javascript" type="text/javascript">//<!--
+    function limpa_numero(numero) {
+      if (numero=="") {
+        numero="0,00";
+      }
+      if (numero.indexOf(".")>-1) {
+        var aux=numero.split(".");
+        numero=aux.join("");
+      }
+      if (numero.indexOf(",")>-1) {
+        numero=numero.replace(",",".");
+      }
+      return parseFloat(numero);
+    }
+
+//var vl_outras_deducoes=limpa_numero(frm_calc.txt_vl_outras_deducoes.value);
+//var vl_outros_acrescimos=limpa_numero(frm_calc.txt_vl_outros_acrescimos.value);
+//var txt_vl_multa_mora=limpa_numero(frm_calc.txt_vl_multa_mora.value);
+//var txt_vl_desc_abatimento=limpa_numero(frm_calc.txt_vl_desc_abatimento.value);
+    function calcula_pgto() {
+      var frm_calc=document.frm_boleto;
+      var vl_cobranca_doc=limpa_numero(frm_calc.txt_vl_cobranca_doc.value);
+      var vl_desc_abatimento=limpa_numero(frm_calc.txt_vl_desc_abatimento.value);
+      var vl_multa_mora=limpa_numero(frm_calc.txt_vl_multa_mora.value);
+      var aux=(vl_cobranca_doc-vl_desc_abatimento+vl_multa_mora);
+      var aux1=aux.toString();
+      frm_calc.txt_vl_cobrado.value=aux1.replace(".",",");
+      FormatNumero(frm_calc.txt_vl_cobrado);
+      decimal(frm_calc.txt_vl_cobrado,2);
+    }
+
+    function consultaReg() {
+     var frm=document.frm_rel_proj;
+      if ((frm.cmb_id_cidade.value!="") && (frm.cmb_tp_doc.value!="") && (frm.txt_id_protocolo.value!="")) {
+        window.open("proj_rel_cons.php?campo1="+frm.cmb_id_cidade.value+"&campo2="+frm.cmb_tp_doc.value+"&campo3="+frm.txt_id_protocolo.value,"consulrot","top=5000,left=5000,screenY=5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+      }
+    }
+
+    function consultaRegcpf(campo1,arq) {
+      if (campo1.value!=""){
+       window.open(arq+"?campo1="+campo1.value,"consulrot","top=5000,left=5000,screenY= 5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+      }
+    }
+
+    function consultacpf(campo) {//alert("chegou aqui.."+campo);
+      var aux=document.frm_boleto.hdn_id_cidade.value=campo;
+      if (campo!= "" ) {//alert("chegou aqui2"+campo);
+        alert("formulario="+cmb_campo.form.name+"&cmb_campo="+cmb_campo.name+"&tabela="+tabela+"&atrib="+atrib+"&cond="+cond+"&obrigatorio="+obrigatorio);
+        window.open("consAvulso.php?campo="+campo.value,"consAvulso","top=5000,left=5000,screenY=5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+      } else {
+	alert("CPF inválido!");
+      }
+    }
+
+      function inserepessoa(nome){
+	var aux_nom=document.frm_boleto.txt_solicitante_aux.value;
+	if (aux_nom !=""){
+          var cpf=document.frm_boleto.txt_cpf.value;
+          window.open("../acessos/inc_pessoas.php?nome="+nome.value+"&cpf="+cpf+"&global_inclusao=s","incPessoas","top=0,left=0,screenY=0,screenX=0,toolbar=no,width=700,height=300,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+	}
+      }
+
+	function checadata(campo){
+	  if(campo.value.length==2){
+	    campo.value=campo.value +"/";
+	  }
+	  if(campo.value.length==5){
+	    campo.value=campo.value +"/";
+	  }
+	}
+
+	function cedente(cedente){//alert("cedente"+cedente.value);
+	  window.open("consAvulsoCedente.php?campo="+cedente.value,"consAvulsoCedente","top=5000,left=5000,screenY=5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+	}
+//--></script>
+<body onload="ajustaspan()">
+<?
+ include ('../../templates/cab.htm');
+?>
+          <form target="_self" enctype="multipart/form-data" method="post" name="frm_boleto" onreset="retorna(this)" onsubmit="return validaForm(this,'hdn_id_cidade,Cidade,t')">
+            <table width="95%" cellspacing="0" border="0" cellpadding="5" align="center">
+              <tr>
+                <td>Cidade</td>
+                    <td>
+                  <select name="cmb_id_cidade" value="" onChange="consultaReg()" onblur="cedente(cmb_id_cidade)">
+                    <option value="">----------------------------</option>
+                    <?
+                          $sql= "SELECT ".TBL_CIDADE.".ID_CIDADE AS ID_CIDADE, ".TBL_CIDADE.".NM_CIDADE, ".TBL_CIDADE.".CEDENTE FROM ".TBL_CIDADE." LEFT JOIN ".TBL_CIDADES_USR." USING(ID_CIDADE) WHERE ID_UF IN ('SC') AND ".TBL_CIDADES_USR.".ID_USUARIO='$usuario' ORDER BY NM_CIDADE";
+                          $res= $conn->query($sql);
+
+                          if ($conn->get_status()==false) {
+                            die($conn->get_msg());
+                          }
+                          while ($tupula = $conn->fetch_row()) {
+                        ?>
+                        <option value="<?=$tupula["ID_CIDADE"]?>"><?=$tupula["NM_CIDADE"]?></option>
+                    <?
+                      }
+                    ?>
+                  </select>
+
+<input type="hidden" name="txt_cedente" value="">
+                   </td>
+                </tr>
+                <tr>
+                  <td>Valor Documento</td>
+                  <td><input type="text" name="txt_vl_cobranca_doc" value=""  onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2);calcula_pgto();" size="25" align="right" class="campo">
+                  </td>
+                  <td>Valor Desconto/Abatimento</td>
+                  <td><input type="text" name="txt_vl_desc_abatimento" value="0,00"  onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2);calcula_pgto();limpa_numero(this,2)" size="25" align="right" class="campo"></td>
+                </tr>
+                <tr>
+<!--                  <td>Valor Outras Deduções</td>
+                  <td><input type="text" name="txt_vl_outras_deducoes"  value="0,00"  onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2);calcula_pgto();" size="25" align="right" class="campo"></td>-->
+                  <td>Valor Multa/Mora</td>
+                  <td><input type="text" name="txt_vl_multa_mora" value="0,00"  onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2);calcula_pgto();limpa_numero(this,2)" size="25" align="right" class="campo"></td>
+                  <td>Valor Cobrado</td>
+                  <td>
+                    <input type="text" name="txt_vl_cobrado" class="campo" align="right" onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2)" size="25" value="">
+                  </td>
+                </tr>
+                <tr>
+<!--                  <td>Valor Outros Acrescimos</td>
+                  <td><input type="text" name="txt_vl_outros_acrescimos" value="0,00" onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2);calcula_pgto();" size="25" align="right" class="campo"></td>-->
+<!--                  <td>Valor Cobrado</td>
+                  <td>
+                    <input type="text" name="txt_vl_cobrado" class="campo" align="right" onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,2)" size="25" value="">
+                  </td>-->
+                </tr>
+                <tr>
+                  <td>Data Vencimento</td>
+                  <td>
+                  <?/* 
+                       onblur="checkDate(this), função forcefocus()  encontram-se em: public_html/js/sigat_div.js?>
+                  */?>
+                  <input type="text" name="txt_data" value="" size="25" class="campo" align="right" onkeypress="return formtData(this, event);" onkeyup="checadata(this)" onblur="checkDate(this)">
+                  </td>
+                  <td>CPF/CNPJ</td>
+                  <td><input type="text" name="txt_cpf" size="21" maxlength="19" class="campo_obr" onblur="cpfcnpj(this);consultaRegcpf(this,'proprietario_cons_avulso.php');">
+		  </td><?//function cpfcnpj encontra-se em: public_html/js/sigat_div.js?>
+                </tr>
+		</tr>
+            </table>
+            <table width="95%" cellspacing="0" border="0" cellpadding="5" align="center">
+                <tr>
+		  <td>Solicitante</td>
+                  <td><input type="text" name="txt_solicitante" size="97" align="right" class="campo" value="" onblur="inserepessoa(this)">
+		      <input type="hidden" name="txt_solicitante_aux" size="97" align="right" class="campo" value="">
+		</td>
+		</tr>
+		<tr>
+		  <td>Endereço</td>
+                  <td><input type="text" name="txt_endereco" size="97" align="right" class="campo" value="">
+		      <input type="hidden" name="txt_endereco_aux" size="97" align="right" class="campo" value="">
+		</td>
+		</tr>
+		<tr>
+                  <td width="15%">Motivo</td>
+                  <td>
+		   <textarea name="txt_motivo" rows="5" cols="95" class="campo"></textarea>
+                </tr>
+	        <tr>
+	          <td>&nbsp;</td>
+	            <td>
+	              <input name="btn_submit" type="submit" value="Gerar Boleto" class="botao" disabled="true" style="background-image : url('../../imagens/botao2.gif');">
+	           </td>
+	        </tr>
+            </table>
+          </form>
+<?
+  include ('../../templates/footer.htm');
+?>

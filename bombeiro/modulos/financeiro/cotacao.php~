@@ -1,0 +1,362 @@
+<?
+// include ('../../templates/head.htm');
+?>
+<?
+  $erro="";
+  require_once 'lib/loader.php';
+// especificando o DSN (Data Source Name)
+  //$dsn= "mysql://$user:$pass@$host/$bd";
+
+// Conectando ao BD BD ($host, $user, $pass, $db)
+  $arquivo="cotacao.php";
+  $conn= new BD (BD_HOST, BD_USER, BD_PASS, BD_NOME_ACESSOS);
+  if ($conn->get_status()==false) {
+    die($conn->get_msg());
+  }
+  $sql= "SELECT ID_ROTINA, NM_ROTINA FROM ".TBL_ROTINAS." WHERE NM_ARQ_ROTINA ='".$arquivo."'";
+  // executando a consulta
+  $res= $conn->query($sql);
+  $rows_rotina=$conn->num_rows();
+  if ($rows_rotina>0) {
+    $rotina = $conn->fetch_row();
+  }
+  
+  $global_obj_sessao->load($rotina["ID_ROTINA"]);
+  $usuario=$global_obj_sessao->is_logged_in();
+  if ((@$_POST["cmb_id_indice"]!="") && (@$_POST["txt_id_dt_cotacao"]!="") && (@$_POST["txt_vl_cotacao"]!="") && (@$_POST["hdn_id_cidade_cotacao"]!="") && (@$_POST["hdn_controle"]!="")) {
+    $ID_INDICE=formataCampo($_POST["cmb_id_indice"],'N');
+    $ID_DT_COTACAO=formataCampo($_POST["txt_id_dt_cotacao"],'DT');
+    $CIDADE_COTACAO=explode("^",$_POST["hdn_id_cidade_cotacao"]);
+    $VL_COTACAO=formataCampo($_POST["txt_vl_cotacao"],'D');
+    $AUX_DT=$_POST["txt_id_dt_cotacao"];
+    $ERRO_TRANS="";
+    if ($_POST["hdn_controle"]==1) {
+      if ($global_inclusao=="S") {
+        $query_trans="BEGIN";
+        $conn->query($query_trans);
+        $query_trans="COMMIT";
+        if ($conn->get_status()==false) {
+          $ERRO_TRANS.=$conn->get_msg()."\n";
+          $query_trans="ROLLBACK";
+        }
+        $query_indice="SELECT CH_PERIODICIDADE FROM ".TBL_INDICE." WHERE ".TBL_INDICE.".ID_INDICE=$ID_INDICE";
+        $conn->query($query_indice);
+        if ($conn->get_status()==false) {
+          $ERRO_TRANS.=$conn->get_msg()."\n";
+          $query_trans="ROLLBACK";
+        }
+        //diferenca_dias
+        $indice=$conn->fetch_row();
+        switch ($indice["CH_PERIODICIDADE"]) {
+          case 'D':
+            $nr_dias=1;
+            break;
+          case 'Q':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,$aux[1],($aux[0]+15),$aux[2]));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+          case 'M':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,($aux[1]+1),$aux[0],$aux[2]));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+          case 'B':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,($aux[1]+2),$aux[0],$aux[2]));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+          case 'T':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,($aux[1]+3),$aux[0],$aux[2]));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+          case 'S':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,($aux[1]+6),$aux[0],$aux[2]));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+          case 'A':
+            $aux=explode("/",$AUX_DT);
+            $dt_f=date("d/m/Y",mktime(0,0,0,$aux[1],$aux[0],($aux[2]+1)));
+            $nr_dias=diferenca_dias($AUX_DT,$dt_f);
+            break;
+        }
+        for ($ix=0; $ix<count($CIDADE_COTACAO); $ix++){
+           //echo "<!-- aqui 1:$ix==>".count($CIDADE_COTACAO)."===>".trim($CIDADE_COTACAO[$ix])."|-->\n";
+          if (trim($CIDADE_COTACAO[$ix])=="") {
+            continue;
+          }
+          for ($y=0; $y<$nr_dias; $y++) {
+            $aux=explode("/",$AUX_DT);
+            $ID_DT_COTACAO="'".date("Y-m-d",mktime(0,0,0,$aux[1],($aux[0]+$y),$aux[2]))."'";
+            $query_cotacao="REPLACE INTO ".TBL_COTACAO." (ID_DT_COTACAO, ID_INDICE,ID_CIDADE,VL_COTACAO) VALUES ($ID_DT_COTACAO, $ID_INDICE, ".$CIDADE_COTACAO[$ix].", $VL_COTACAO)";
+            //echo "<!--$query_cotacao\n-->\n";
+            $conn->query($query_cotacao);
+              
+              
+            if ($conn->get_status()==false) {
+              $ERRO_TRANS.=$conn->get_msg()."\n";
+              $query_trans="ROLLBACK";
+            }
+          }
+        }
+        $conn->query($query_trans);
+        if (($conn->get_status()==false)||($ERRO_TRANS!="")) {
+          die($ERRO_TRANS."\n".$conn->get_msg());
+        }
+      } else {
+        $query_cotacao="";
+        $erro=MSG_ERR_INC;
+      }
+    }
+    if ($_POST["hdn_controle"]==2) {
+      if ($global_alteracao=="S") {
+        $query_trans="BEGIN";
+        $conn->query($query_trans);
+        $query_trans="COMMIT";
+        if ($conn->get_status()==false) {
+          $ERRO_TRANS.=$conn->get_msg()."\n";
+          $query_trans="ROLLBACK";
+        }
+        for ($ix=0; $ix<count($CIDADE_COTACAO); $ix++){
+          echo "<!-- aqui 1:$ix==>".count($CIDADE_COTACAO)."===>".trim($CIDADE_COTACAO[$ix])."|-->\n";
+          if (trim($CIDADE_COTACAO[$ix])=="") {
+            continue;
+          }
+          $query_cotacao="UPDATE ".TBL_COTACAO." SET VL_COTACAO=$VL_COTACAO WHERE ".TBL_COTACAO.".ID_DT_COTACAO='$ID_DT_COTACAO' AND ID_INDICE=$ID_INDICE AND ID_CIDADE=".$CIDADE_COTACAO[$ix];
+          echo "<!--$query_cotacao\n-->\n";
+          $conn->query($query_cotacao);
+          
+          if ($conn->get_status()==false) {
+            $ERRO_TRANS.=$conn->get_msg()."\n";
+            $query_trans="ROLLBACK";
+          }
+        }
+         
+        $conn->query($query_trans);
+        if (($conn->get_status()==false)||($ERRO_TRANS!="")) {
+          die($ERRO_TRANS."\n".$conn->get_msg());
+        }
+       } else {
+        $query_cotacao="";
+        $erro=MSG_ERR_ALT;
+      }
+    }
+    $ID_CODIGO_RETORNO=$ID_INDICE." PARA DATA ".$_POST["txt_id_dt_cotacao"];
+  //  include ('../../templates/retorno.htm');
+  } else {
+    if ((isset($_POST["cmb_id_indice"])) && (isset($_POST["txt_id_dt_cotacao"])) && (isset($_POST["hdn_id_cidade_cotacao"]))) {
+      $erro= MSG_ERR_OBR;
+    }
+  }
+?>
+<script language="javascript" type="text/javascript">//<!--
+
+    function consultaReg(campo1,campo2,campo3,arq) {
+      if ((campo1.value!="")&&(campo2.value!="")&& (campo3.value!=campo2.value)) {
+        var aux=campo2.value.split("/");
+        var data_campo=aux[2]+"-"+aux[1]+"-"+aux[0];
+        window.open(arq+"?campo="+campo1.value+"&campo2="+data_campo,"consulrot","top=5000,left=5000,screenY=5000,screenX=5000,toolbar=no,location=no,directories=no,status=yes,menubar=no,scrollbars=no,resizable=no,width=1,height=1,innerwidth=1,innerheight=1");
+        campo3.value=campo2.value;
+      }
+    }
+    function retorna(frm) {
+      frm.btn_incluir.value="Incluir";
+      frm.hdn_controle.value="1";
+      //frm.txt_id_rotina.readOnly=false;
+    }
+    function move_item(from, to) {
+      var f;
+      var SI; /* selected Index */
+      if(from.options.length>0) {
+        for(i=0;i<from.length;i++) {
+          if(from.options[i].selected) {
+            SI=from.selectedIndex;
+            f=from.options[SI].index;
+            to.options[to.length]=new Option(from.options[SI].text,from.options[SI].value);
+            from.options[f]=null;
+            i--;
+          }
+        }
+      }
+      if (from.options.length==0) {
+        var mx= from.options.length++;
+        from.options[mx].value="";
+        from.options[mx].text="---------------------------------------------";
+      }
+      if (to.length>1) {
+        for (i=0; i<to.length;i++) {
+          if (to.options[i].value=="") {
+            to.options[i]=null;
+          }
+        }
+      }
+      document.frm_cotacao.hdn_id_cidade_cotacao.value="";
+      for (i=0;i<document.frm_cotacao.cmb_id_cidade_cotacao.options.length;i++) {
+        if (document.frm_cotacao.cmb_id_cidade_cotacao.options[i].value!="") {
+          document.frm_cotacao.hdn_id_cidade_cotacao.value+=document.frm_cotacao.cmb_id_cidade_cotacao.options[i].value+"^";
+        }
+      }
+    }
+//--></script>
+<body onload="ajustaspan()">
+<?
+// include ('../../templates/cab.htm');
+?>
+
+          <form target="_self" enctype="multipart/form-data" method="post" name="frm_cotacao" onreset="retorna(this)" onsubmit="return validaForm(this,'cmb_id_indice,Indice,t','txt_id_dt_cotacao,Data Cotação.t','hdn_id_cidade_cotacao,Cidade Cotação,t')">
+
+
+
+ <input type="hidden" name="op_menu" value="<?=$_POST['op_menu']?>">
+
+
+
+<?/*=var_dump($_POST)*/?>
+
+            <table align="center" cellpadding="2" cellspacing="0" border="0" width="95%">
+              <tr>
+                <td>Indice</td>
+                <td>
+                  <select name="cmb_id_indice" title="Indice que será cadastrada a Cotação" class="campo_obr" onchange="javascript:document.frm_cotacao.hdn_id_dt_cotacao.value='c'; consultaReg(this,document.frm_cotacao.txt_id_dt_cotacao,document.frm_cotacao.hdn_id_dt_cotacao,'./modulos/financeiro/cons_cidade_cotacao.php')">
+                    <option value="">-------------</option>
+                    <?
+                      $query_indice="SELECT ID_INDICE,NM_INDICE FROM ".TBL_INDICE;
+                      $conn->query($query_indice);
+                      if ($conn->get_status()==false) {
+                        die($conn->get_msg());
+                      }
+                      while ($indice=$conn->fetch_row()) {
+                    ?>
+                    <option value="<?=$indice["ID_INDICE"]?>"><?=$indice["NM_INDICE"]?></option>
+                    <?
+                      }
+                    ?>
+                  </select>
+                </td>
+                <td>Data</td>
+                <td>
+                  <input type="hidden" name="hdn_id_dt_cotacao" value="">
+                  <input type="text" name="txt_id_dt_cotacao" value="" id="sel1" size="30"  class="campo_obr" >
+                  <input type="button" value="" style="background-image : url('./imagens/img.gif');" onclick="return showCalendar('sel1', 'd-m-y');">
+
+               </td>
+           
+             </tr>
+              <tr>
+                <td>Valor</td>
+                <td colspan="3"><input type="text" name="txt_vl_cotacao" class="campo_obr" value="" align="right" title="Valor da Cotação" onkeypress="return validaTecla(this, event, 'n')" onkeyup="FormatNumero(this)" onblur="decimal(this,6)"></td>
+              </tr>
+              <tr>
+                <td colspan="4">
+                  <table border=0 align=center cellpadding=3 cellspacing=0>
+                    <tr>
+                      <td>
+                        <select name="cmb_id_cidade" multiple size="10">
+                        <?
+                            $query_cidade="SELECT ".TBL_CIDADE.".ID_CIDADE, ".TBL_CIDADE.".NM_CIDADE FROM ".TBL_CIDADE." JOIN ".TBL_CIDADES_USR." USING(ID_CIDADE) WHERE  ".TBL_CIDADES_USR.".ID_USUARIO='".$usuario."' AND ".TBL_CIDADE.".ID_UF IN ('SC') AND ".TBL_CIDADE.".ID_CIDADE>300 ORDER BY ".TBL_CIDADE.".NM_CIDADE";
+                          echo "<!-- aqui0:\n$query_cidade\n-->\n";
+                            $res= $conn->query($query_cidade);
+                            $rows_cidade=$conn->num_rows();
+                            if ($rows_cidade>0) {
+                              while ($cidade = $conn->fetch_row()) {
+                        ?>
+                          <option value="<?=$cidade["ID_CIDADE"]?>"><?=$cidade["NM_CIDADE"]?></option>
+                        <?
+                              }
+                            } else {
+                        ?>
+                          <option value="">---------------------------------------------</option>
+                        <?
+                            }
+                        ?>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="button" value = "    Adiciona >  " onClick="move_item(cmb_id_cidade, cmb_id_cidade_cotacao)" class="botao" ><br>
+                        <input type="button" value = "< Remove    " onClick="move_item(cmb_id_cidade_cotacao,cmb_id_cidade)" class="botao" >
+                      </td>
+                      <td>
+                        <input type="hidden" name="hdn_id_cidade_cotacao" value="">
+                        <Select name="cmb_id_cidade_cotacao" multiple size="10">
+                        <option value="">---------------------------------------------</option>
+                        </Select>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+<?
+
+  include('./templates/btn_inc.htm');
+
+?>
+            </table>
+          </form>
+<?
+//  include ('../../templates/footer.htm');
+?>
+
+
+
+<script type="text/javascript">
+
+
+
+
+//  FUNCOES DO CALENDARIO... ......................................................//......................//...CALENDARIO...........//.........................//.....................//................
+
+
+
+function selected(cal, date) {
+  cal.sel.value = date; // just update the date in the input field.
+  if (cal.sel.id == "sel1" || cal.sel.id == "sel3")
+
+    cal.callCloseHandler();
+}
+
+function closeHandler(cal) {
+  cal.hide();                        // hide the calendar
+}
+
+function showCalendar(id, format) {
+  var el = document.getElementById(id);
+  if (calendar != null) {
+    // we already have some calendar created
+    calendar.hide();          
+  } else {
+    // first-time call, create the calendar.
+    var cal = new Calendar(false, null, selected, closeHandler);
+  
+    calendar = cal;                  // remember it in the global var
+    cal.setRange(1900, 2070);        // min/max year allowed.
+    cal.create();
+  }
+  calendar.setDateFormat(format);    // set the specified date format
+  calendar.parseDate(el.value);      // try to parse the text in field
+  calendar.sel = el;                 // inform it what input field we use
+  calendar.showAtElement(el);        // show the calendar below it
+
+  return false;
+}
+
+var MINUTE = 60 * 1000;
+var HOUR = 60 * MINUTE;
+var DAY = 24 * HOUR;
+var WEEK = 7 * DAY;
+
+function isDisabled(date) {
+  var today = new Date();
+  return (Math.abs(date.getTime() - today.getTime()) / DAY) > 10;
+}
+
+</script>
+
+
+
+
+
+
+

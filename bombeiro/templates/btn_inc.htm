@@ -1,0 +1,26 @@
+              <tr valign="top" align="center">
+                <td align="center" colspan="4"><br>
+                <table width="50%" cellspacing="0" border="0" cellpadding="0" align="center">
+                    <tr align="center" valign="center">
+                      <td>
+<?
+      if ($global_inclusao=="S") {
+?>
+                        <input type="hidden" name="hdn_controle" value="1">
+                        <input type="submit" name="btn_incluir" value="Incluir" align="middle" title="Inclui o Registro" class="botao" >
+<?
+      } else {
+?>
+                        <input type="hidden" name="hdn_controle" value="2">
+                        <input type="submit" name="btn_incluir" value="Alterar" align="middle" title="Altera o Registro" class="botao" > <!--disabled="true" -->
+<?
+      }
+?>
+                      </td>
+                      <td>
+                        <input type="reset" name="btn_limpar" value="Limpar" align="middle" title="Limpa as Informações" class="botao">
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
